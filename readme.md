@@ -41,7 +41,7 @@ to read the provided data sets, apply ECG-removal algorithms (or reload precompu
 
 
 #### Acknowledgements
-The toolbox contains code contributions by Reza Sameni (Pan-Tompkins peak detection and some of the files in the `model-based` directory - see individual file headers), Jan Graßhoff (`swt_denoising`) and Julia Sauer (various files throughout the project).
+The toolbox contains code contributions by Reza Sameni (Pan-Tompkins peak detection and some of the files in the `model-based` directory - see individual file headers -, all from the [OSET toolbox](https://gitlab.com/rsameni/OSET)), Jan Graßhoff (`swt_denoising`) and Julia Sauer (various files throughout the project).
 Julia Sauer also performed the study from which the two included recordings have been obtained.
 Everything else is authored by me.
 
