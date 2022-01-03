@@ -17,10 +17,10 @@ Two exemplary data sets of respiratory electromograms (two channels repectively)
 	
 Matlab implementations of following algorithms:
 - EMG Preprocessing
-- QRS Detection
+- QRS Detection (mostly taken from the [OSET toolbox](https://gitlab.com/rsameni/OSET) of Reza Sameni, with some minor modifications)
 - Template Subtraction and Adaptive Template Subtraction
-- Model-based ECG removal with second and 25th order Extended Kalman filter and smoother (based on Sameni et al., "A nonlinear Bayesian filtering framework for ECG denoising," 2007, IEEE Transactions on Biomedical Engineering, and Akhbari et al., "ECG denoising and fiducial point extraction using an extended Kalman filtering framework with linear and nonlinear phase observations," Physiological Measurement, 2016).
-- Wavelet Denoising
+- Model-based ECG removal with second and 25th order Extended Kalman filter and smoother (based on Sameni et al., "A nonlinear Bayesian filtering framework for ECG denoising," 2007, IEEE Transactions on Biomedical Engineering, and Akhbari et al., "ECG denoising and fiducial point extraction using an extended Kalman filtering framework with linear and nonlinear phase observations," Physiological Measurement, 2016). Implementation partially based on the [OSET toolbox](https://gitlab.com/rsameni/OSET) of Reza Sameni.
+- Wavelet Denoising (contributed by Jan Graßhoff)
 - Empirical Mode Decomposition
 - Probabilistic Adaptive Template Subtraction (PATS, best-performing algorithm as per Petersen 2022).
 		
