@@ -45,6 +45,8 @@ The toolbox contains code contributions by Reza Sameni (Pan-Tompkins peak detect
 Julia Sauer also performed the study from which the two included recordings have been obtained.
 Everything else is authored by me.
 
+Most of the work leading to the development of this toolbox has been done while I was at the [University of Lübeck](https://www.uni-luebeck.de/en/university/university.html), with the [Institute for Electrical Engineering in Medicine](https://www.ime.uni-luebeck.de/institute.html).
+
 --- 
 
 Eike Petersen, 2021
