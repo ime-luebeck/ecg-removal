@@ -1,7 +1,7 @@
 function [SNR, activity_only, activity_only_mask, signal_bl_removed] = ...
-    SNRmeasured(signal, rWaveIndex, activity_mask)
+    SNRmeasured(signal, rWaveIndex, fs, activity_mask)
 %SNRMEASURED Calculating SNR (EMG-to-ECG ratio) of a cardiac contaminated
-%EMG signal with the help of simultaneosly measured pressure signal.
+%EMG signal (optinally) with the help of a simultaneosly measured resp activity signal.
 %
 %   Active EMG sections are extracted during inspiration and QRS-complexes
 %   are extracted during expiration. Sections in the signal exceeding a
@@ -10,6 +10,7 @@ function [SNR, activity_only, activity_only_mask, signal_bl_removed] = ...
 %   
 %   INPUT:  signal        ->  Vector with cardiac contaminated EMG signal.
 %           rWaveIndex    ->  Indices of detected r peaks in 'signal'.
+%           fs            ->  Sampling rate of signal (Hz)
 %           activity_mask ->  Vector with same length as 'signal' containing
 %                             1 where EMG activity is present, and 0
 %                             elsewhere.
@@ -42,12 +43,10 @@ function [SNR, activity_only, activity_only_mask, signal_bl_removed] = ...
 % OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR 
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-fs = 1024;
-
 [~, QRS_mask] = extractQRS(signal, rWaveIndex, fs);
 
 % Drop samples where both QRS complex and EMG are active
-if nargin > 2
+if nargin > 3
     to_drop_mask = QRS_mask & activity_mask;
     QRS_mask(to_drop_mask) = 0;
     activity_only_mask = activity_mask;

@@ -1,6 +1,9 @@
 function peaks = peak_detection(signal, fs, time_ms)
 %PEAK_DETECTION Two-stage peak detection
 %
+% Returns a vector of the same length as signal, with 1 indicating the
+% presence of an R peak, and 0 else.
+%
 % Pan-Tompkins R peak detection algorithm essentially detects peaks in a
 % variously filtered version of the ECG signal.
 % Sometimes, the beat shape changes such that a different peak becomes the
@@ -45,8 +48,8 @@ end
 rPeakIdces = find(rPeaks);
 num_peaks = length(rPeakIdces);
 % use a narrow section around R peak for alignment
-lengthLeft = 200;
-lengthRight = 200;
+lengthLeft = ceil(0.2*fs);
+lengthRight = ceil(0.2*fs);
 avgPeak = build_template(rPeakIdces, lengthLeft, lengthRight, signal, num_peaks, num_peaks, false);
 
 peaks = rPeaks;
@@ -60,13 +63,12 @@ for ii = 2:(num_peaks-1)
     lag_corr = lags(indexmax); % lag > 0 => template must be shifted to the right
     
     % Finally, shift to the local optimum
-    % To prevent getting stuck in *really* local optima, search the 11
-    % surrounding samples
+    % To prevent getting stuck in *really* local optima, search the 11 surrounding samples
     [~, idxopt] = max(peak_sign * current_peak((-5:5) + lengthLeft + 1 + lag_corr));
     lag_opt = lag_corr + idxopt - 6;
     
     peaks(rPeakIdces(ii)) = 0;
-    if rPeakIdces(ii) + lag_opt - last_peak > 10
+    if rPeakIdces(ii) + lag_opt - last_peak > ceil(0.01*fs)
         peaks(rPeakIdces(ii)+lag_opt) = 1;
         last_peak = rPeakIdces(ii)+lag_opt;
     end

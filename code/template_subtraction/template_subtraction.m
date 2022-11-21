@@ -8,6 +8,12 @@ function ECGremovedSignal = template_subtraction(signal, rPeaks, varargin)
 %   restricted to width of current RR-interval by simply cutting off the
 %   remaining samples at the edges.
 %
+% The only optional argument is the number of observed QRS complexes to 
+% build the current template from, default: 40.
+%
+% Notice that this implementation is completely agnostic to the sampling
+% rate.
+%
 % Copyright 2019 Institute for Electrical Engineering in Medicine, 
 % University of Luebeck
 % Eike Petersen, Julia Sauer

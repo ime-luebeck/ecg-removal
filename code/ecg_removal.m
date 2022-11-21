@@ -42,17 +42,25 @@ if isempty(dir('../data/csv/subject1.csv')) || isempty(dir('../data/csv/subject2
     unzip('../data/subject1.zip','../data/csv')
     unzip('../data/subject2.zip','../data/csv')
 end
+% The following call will load a total of four EMG signals, two each from
+% two subjects, into a cell array of the following structure:
+%       data =      {channel1, channel2, pressure, time,'01'     -> of testperson 01
+%                    channel1, channel2, ...     ,     ,'02'}    -> of testperson ...
+% Note that this specific structure is not necessary to run the algorithms
+% in this toolbox; it is only necessary if one wants to use the
+% 'filter_signals' utility function for handling multiple signals at the
+% same time. You can also simply apply the removal functions to individual
+% signals.
 rawData = load_measured_signals('../data/csv');
 
-fs = 1024;
-windowEMG = fs/4;
-f0 = 50;
+fs = 1024;  % signal sampling rate
+fpl = 50;  % powerline interference frequency; will be taken into account / suppressed during various filtering steps
 use_filtfilt = true;
 
 %% Preprocessing and R-Peak Detection
 fprintf('\n Preprocessing... \n')
 % Power line removal
-algoPL = @(sig) butter_filt_stabilized(sig, [f0-1 f0+1], fs, 'stop', use_filtfilt, 2);
+algoPL = @(sig) butter_filt_stabilized(sig, [fpl-1 fpl+1], fs, 'stop', use_filtfilt, 2);
 tempData = filter_signals(rawData, algoPL, [1 2]);
 % Low-pass against aliasing
 algoLP = @(sig) butter_filt_stabilized(sig, 511.9999, fs, 'low', use_filtfilt, 6);
@@ -61,6 +69,7 @@ tempData = filter_signals(tempData, algoLP, [1 2]);
 algoAF = @(sig) movmean(sig, 5, 'omitnan');
 tempData = filter_signals(tempData, algoAF, 3);
 fprintf('\n R-Peak Detection... \n')
+fs = 512;
 algoRPeak = @(sig, time) [sig, peak_detection(butter_filt_stabilized(sig, 10, fs, 'high', use_filtfilt, 6), fs, time)'];
 dataWithRPeaks = filter_signals(tempData, algoRPeak, [1 2], 0, 1);
 
@@ -89,8 +98,8 @@ end
 fprintf('\n Adaptive Template Subtraction (ATS)... \n')
 name = fullfile('../results', 'dataATS.mat');
 if isempty(dir(name))
-    dataATS = filter_signals(dataWithRPeaksHP20, ...
-        @adaptive_template_subtraction, [1 2], 1);
+    ats = @(signal, rpeaks) adaptive_template_subtraction(signal, rpeaks, fs);
+    dataATS = filter_signals(dataWithRPeaksHP20, ats, [1 2], 1);
     save(name, 'dataATS');
 else
     load(name)
@@ -124,7 +133,7 @@ fprintf('\n Wavelet Transform (SWT)... \n')
 name = fullfile('../results', 'dataSWT.mat');
 if isempty(dir(name))
     swt = @(signal, rPeaks) ...
-		swtden(signal, rPeaks, 'h', 3, 'db2', 4.5);
+		swtden(signal, rPeaks, fs, 'h', 3, 'db2', 4.5);
     dataSWT = filter_signals(dataWithRPeaks, swt, [1 2], 1);
     save(name, 'dataSWT');
 else
@@ -135,7 +144,7 @@ end
 fprintf('\n Extended Kalman Smoother (EKS2)... \n')
 name = fullfile('../results', 'dataEKS2.mat');
 if isempty(dir(name))
-    ekf2 = @(signal, rpeaks) kalman_filter_2(signal, rpeaks);
+    ekf2 = @(signal, rpeaks) kalman_filter_2(signal, rpeaks, fs);
     [~, dataEKS2] = ...
 		filter_signals(dataWithRPeaksHP10, ekf2, [1 2], 1);
     save(name, 'dataEKS2');
@@ -147,7 +156,7 @@ end
 fprintf('\n Extended Kalman Smoother (EKS25)... \n')
 name = fullfile('../results', 'dataEKS25.mat');
 if isempty(dir(name))
-    ekf25 = @(signal, rpeaks) kalman_filter_25(signal, rpeaks);
+    ekf25 = @(signal, rpeaks) kalman_filter_25(signal, rpeaks, fs);
     [~, dataEKS25] = ...
 		filter_signals(dataWithRPeaksHP10, ekf25, [1 2], 1);
     save(name, 'dataEKS25');
@@ -170,7 +179,7 @@ end
 fprintf('\n Probabilistic Adaptive Template Subtraction (PATS)... \n')
 name = fullfile('../results', 'dataPATS.mat');
 if isempty(dir(name))
-    pats = @(signal, rpeaks) PATS(signal, rpeaks, 0);
+    pats = @(signal, rpeaks) PATS(signal, rpeaks, fs, 0, [], [], fpl);
     [~, dataPATS] = ...
         filter_signals(dataWithRPeaksHP20, pats, [1 2], 1);
     save(name, 'dataPATS');
@@ -197,7 +206,7 @@ plot_results(dataWithRPeaks, [], '../results/denoised_data', ...
 
 %% Analysis
 fprintf('\n Evaluate results...\n')
-plot_pm_snr_improvement(dataWithRPeaksHP20, '../results/pm_snr', ...
+plot_pm_snr_improvement(dataWithRPeaksHP20, fs, '../results/pm_snr', ...
     dataTS, 'TS', ...
     dataATS, 'ATS', ...
     dataHP200, 'HP200', ...
@@ -208,7 +217,7 @@ plot_pm_snr_improvement(dataWithRPeaksHP20, '../results/pm_snr', ...
     dataEMD, 'EMD', ...
 	dataPATS, 'PATS');
 
-plot_frequency_spectrum(1024, '../results/spectrum', ...
+plot_frequency_spectrum(fs, '../results/spectrum', ...
     dataWithRPeaks, 'raw', ...
     dataTS, 'TS', ...
     dataATS, 'ATS', ...

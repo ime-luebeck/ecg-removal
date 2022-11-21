@@ -1,9 +1,10 @@
-function [EKF25, EKS25] = kalman_filter_25(signal, rWave)
+function [EKF25, EKS25] = kalman_filter_25(signal, rWave, fs)
 %EKF25 ECG-removal of EMG signals with the help of a non-linear ECG model
 %and the extended kalman filter and smoother
 %   INPUT:  signal  ->  Vector with EMG signal
 %           rWave   ->  Vector with same length as 'signal' which is 1 when
 %                       an r peak is detected and 0 else
+%           fs      ->  Sampling rate of signal and rWave
 %   OUTPUT: EKF25   ->  Vector with same length as 'signal' with ECG-removed
 %                       EMG signal by extended kalman filter
 %           EKS25   ->  Vector with same length as 'signal' with
@@ -36,7 +37,6 @@ function [EKF25, EKS25] = kalman_filter_25(signal, rWave)
 % linear phase calculation
 phase = PhaseCalculation(rWave);
 rWaveIndex = find(rWave);
-fs = 1024;
 
 % determination of mean ECG with linear phase
 bins = round(fs/3);
@@ -69,8 +69,14 @@ v = zeros(4,1);
 [P_signal, C_signal, T_signal] = ecg_windowing(signal, phase, -pi/6, pi/6, 30);
 Y = [phase(:)'; P_signal(:)'; C_signal(:)'; T_signal(:)'];
 
-[~, activity_only] = SNRmeasured(signal, rWaveIndex);
+[~, activity_only] = SNRmeasured(signal, rWaveIndex, fs);
 emg_var = var(activity_only);
+
+% Attempt at automatically tuning the noise covariance matrices based on
+% some fundamental signal statistics.
+% CAUTION, many manually tuned magic numbers ahead! Finding an optimal
+% noise matrix tuning is _the_ crux of this method. If you find a better
+% tuning method that works across many datasets, please do let me know.
 
 % process noise covariance matrix
 Q = eye(25);
@@ -84,6 +90,7 @@ Q(5:end,5:end) = diag([[2e-2; 2e-2; 6e-2; 6e-2; 6e-2; 2e-2; 2e-2] .* abs(Optimum
 	2e-2 * abs(OptimumParams(8:14));  % bi
 	2e-3 * abs(OptimumParams(15:21))]); % thetai
 
+% measurement noise covariance matrix
 R = diag([omega_std^2, emg_var, emg_var, emg_var]);  
 
 [Xhat, Xsmoothed, ~] = kalman_filter_25_sequential(Y, x0, P0, Q, R, w(:), v, fs, 0, xmin, xmax);

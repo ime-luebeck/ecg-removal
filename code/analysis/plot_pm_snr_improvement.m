@@ -1,4 +1,4 @@
-function plot_pm_snr_improvement(dataWithRPeaks, filename, varargin)
+function plot_pm_snr_improvement(dataWithRPeaks, fs, filename, varargin)
 %PLOT_PM_SNR_IMPROVEMENT Calculates and plots the improvement of
 %periodicity measurement and signal-to-noise ratio of the ECG-removed
 %signals compared to raw EMG signals.
@@ -29,7 +29,7 @@ function plot_pm_snr_improvement(dataWithRPeaks, filename, varargin)
 algo_data = varargin(1:2:end);
 algo_names = varargin(2:2:end);
 
-[SNRimprovement, ~] = analyzeSNRimprovement(dataWithRPeaks, algo_data{:});
+[SNRimprovement, ~] = analyzeSNRimprovement(dataWithRPeaks, fs, algo_data{:});
 [pmImprovement, ~] = analyzePeriodicityMeasurement(dataWithRPeaks, [], algo_data{:});
 
 fig = figure;

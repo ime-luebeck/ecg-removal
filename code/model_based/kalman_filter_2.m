@@ -1,20 +1,24 @@
 function [removedKalmanFilter, removedKalmanSmoother, phase] = ...
-    kalman_filter_2(signal, rWave, varargin)
+    kalman_filter_2(signal, rWave, fs, varargin)
 %KALMANFILTER Model-based ECG-removal algorithm. This function estimates a
 %noise free ECG-signal out of a cardiac contaminated EMG-signal and
 %subtracts it from the measurement to clean the EMG-signal.
 %   INPUT:  
-%           signal =    cardiac contaminated EMG signal
-%           rWave =     detected R-peaks, vector of the length of "signal"
-%           with 1 -> detected R-peak and 0-> else (see function "PeakDetection2")
-%           m =         maximum number of Gaussian kernels that are used to model the ECG-waveform
-%           tau = 
-%           gamma = 
+%           signal  ->  cardiac contaminated EMG signal
+%           rWave   ->  detected R-peaks, vector of the length of "signal"
+%                       with 1 -> detected R-peak and 0-> else (see function "PeakDetection2")
+%           fs      ->  Sampling rate of both signal and rWave
+%           m       ->  maximum number of Gaussian kernels that are used to
+%                       model the ECG-waveform (optional, default 13)
+%           tau     ->  Kalman filter forgetting time. tau=[] for no
+%                       forgetting factor (default)
+%           gamma   ->  observation covariance adaptation-rate. 0<gamma<1
+%                       and gamma=1 for no adaptation. Optional, default: 0.6.
 %   OUTPUT:
-%           remvodeKalmanFilter = denoised ECG is estimated by the Extended
-%           Kalman Filter and subtracted from "signal"
-%           removedKalmanSmoother = denoised ECG is estimated by the
-%           Extended Kalman Smoother and subtracted from "signal"
+%           remvodeKalmanFilter    ->  denoised ECG is estimated by the Extended
+%                                      Kalman Filter and subtracted from "signal"
+%           removedKalmanSmoother  ->  denoised ECG is estimated by the Extended 
+%                                      Kalman Smoother and subtracted from "signal"
 %
 % Copyright 2019 Institute for Electrical Engineering in Medicine, 
 % University of Luebeck
@@ -39,25 +43,25 @@ function [removedKalmanFilter, removedKalmanSmoother, phase] = ...
 % OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR 
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-    if nargin > 2
+    if nargin > 3
         m = varargin{1};
     else
         m = 13;
     end
 
-	if nargin > 3
+	if nargin > 4
 		tau = varargin{2};
 	else
 		tau = [];                   % Kalman filter forgetting time. tau=[] for no forgetting factor
 	end
 	
-	if nargin > 4
+	if nargin > 5
 		gamma = varargin{3};
-	else
+    else
+        % I am unsure right now whether this should be tuned depending on fs?
 		gamma = 0.6;                  % observation covariance adaptation-rate. 0<gamma<1 and gamma=1 for no adaptation
 	end
-
-    fs = 1024;
+    
     bins = round(fs/3);
     
     rWave = rWave(:)';
@@ -77,6 +81,7 @@ function [removedKalmanFilter, removedKalmanSmoother, phase] = ...
 	
 	X0 = [-pi 0]';              
 	P0 = [(2*pi)^2 0 ;0 (10*max(abs(signal))).^2];   % Init state covariance
+    
 	Q = diag([(.04*OptimumParams(1:N)).^2, ...
 			  (.02*ones(1,N)).^2, ...
 			  (.02*ones(1,N)).^2, ...

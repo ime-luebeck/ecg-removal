@@ -1,4 +1,4 @@
-function [ECGremovedSignal, ECGremovedSignal_white_plr_hp] = PATS(signal, rPeaks, varargin)
+function [ECGremovedSignal, ECGremovedSignal_white_plr_hp] = PATS(signal, rPeaks, fs, varargin)
 % PATS Probabilistic Adaptive Template Subtraction that takes time variability and the influence of the RR
 % interval on the heart beat signal into account
 %
@@ -30,22 +30,29 @@ function [ECGremovedSignal, ECGremovedSignal_white_plr_hp] = PATS(signal, rPeaks
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-if nargin > 2 && ~isempty(varargin{1})
+if nargin > 3 && ~isempty(varargin{1})
     variant = varargin{1};
 else
     variant = 4;
 end
 
-if nargin > 3 && ~isempty(varargin{2})
+if nargin > 4 && ~isempty(varargin{2})
     use_poly = varargin{2};
 else
     use_poly = true;
 end
 
-if nargin > 4 && ~isempty(varargin{3})
+if nargin > 5 && ~isempty(varargin{3})
     delays = varargin{3};
 else
     delays = 0;
+end
+
+% Power line frequency (Hz); will be taken into account and suppressed in some filtering steps
+if nargin > 6 && ~isempty(varargin{4})
+    fpl = varargin{4};
+else
+    fpl = 50;
 end
 
 rPeakIdces = find(rPeaks(:));
@@ -53,7 +60,6 @@ rPeakIdces = find(rPeaks(:));
 signal = signal(:);
 [N, m] = size(signal);
 numQRS = length(rPeakIdces);
-fs = 1024;
 
 subtractionSignal = zeros(N, 1);
 
@@ -193,13 +199,13 @@ end
 % identification (using prediction error minimization) in the SysID toolbox does the same thing as,
 % e.g., arburg, *and* can deal with multiple "experiments" for the same identification task.
 % Use that!
-[~, ~, activity_only_mask, signal_bl_removed] = SNRmeasured(signal, rPeakIdces);
+[~, ~, activity_only_mask, signal_bl_removed] = SNRmeasured(signal, rPeakIdces, fs);
 activity_only_signal = signal_bl_removed;
 activity_only_signal(~activity_only_mask) = nan;
 % ignore first + last 5s as these often contain artifacts
 activity_only_signal(1:round(5*fs)) = nan;
 activity_only_signal(end-round(5*fs):end) = nan;
-ar_id_data = non_nan_phases_iddata(activity_only_signal);
+ar_id_data = non_nan_phases_iddata(activity_only_signal, [], [], fs);
 sys = arx(ar_id_data, 6);
 a = sys.a;
 %a = arburg(activity_only_bl_removed, 6);
@@ -209,7 +215,7 @@ signal_white = filter(a, 1, signal);
 
 
 %% 2. Estimate time-varying measurement (=EMG) noise covariance, using segments where there is likely no cardiac activity
-[~, ~, activity_only_mask, signal_bl_removed] = SNRmeasured(signal_white, rPeakIdces);
+[~, ~, activity_only_mask, signal_bl_removed] = SNRmeasured(signal_white, rPeakIdces, fs);
 % Ignore first + last 5s as these often contain artifacts
 % Identify a MOVING variance as the variance of the EMG signal depends on the level of activity
 not_first_last_5s_mask = (((1:length(signal_white)) >= round(fs*5)) & ((1:length(signal_white)) <= length(signal_white) - round(fs*5)))';
@@ -245,13 +251,13 @@ for ii = 1:template_len
     end
     
     % 3a. Perform ML estimation to identify the state-space model for this heart beat template sample
-    % Use the solution of the previous
+    % Reuse the solution of the previous heartbeat for initialization
+    % Replace fmincon by NOMAD once available on unix?
+    % Ignore first + last five beats    
     lb = [-2, -2, -2, -0.2 * ones(1, n_features), -0.5, 1e-8]';
     ub = [2, 2, 2, 0.2 * ones(1, n_features), 0.5, 0.2]';
-    % Replace by NOMAD once available on unix
-    % Ignore first + last five beats
-    opt_params = fmincon(@(par) sample_time_course_est(meas_signal(6:end-5), input_signals(6:end-5, :), par, emg_var_loc(6:end-5)), p0, ...
-                         [], [], [], [], lb, ub, [], ...
+    opt_params = fmincon(@(par) sample_time_course_est(meas_signal(6:end-5), input_signals(6:end-5, :), par, ...
+                         emg_var_loc(6:end-5)), p0, [], [], [], [], lb, ub, [], ...
                          optimoptions(@fmincon, 'Display', 'iter', 'Diagnostics', 'on', 'UseParallel', true));
 %     if ispc
 %         % Use OPTI toolbox version of NOMAD solver
@@ -347,9 +353,8 @@ for ii = 1:numQRS
     elseif overlap_right > 0
         % There is some overlap between this and the next template.
         % In the overlap region, gradually transition from one template to the other.
-        % if overlap_right > template_half_len, we're in serious trouble
-        % anyway... (two peaks are extremely close together).
-        overlap_right = min(overlap_right, template_half_len - 50);
+        % if overlap_right > template_half_len, we're in serious trouble anyway: two peaks are very close together.
+        overlap_right = min(overlap_right, template_half_len - round(0.05*fs));
         weights = ones(1, template_half_len);
         stepsize = 1/(overlap_right+1);
         weights(end-overlap_right+1:end) = (1-stepsize):-stepsize:stepsize;
@@ -376,7 +381,7 @@ ECGremovedSignal_white = signal_white - subtractionSignal;
 %ECGremovedSignal = filter(1, a, ECGremovedSignal_white);
 % but make sure to remove all low-frequency + 50Hz stuff before doing that, in order not to amplify noise!
 use_filtfilt = true; half_order = 2;
-ECGremovedSignal_white_plr = butter_filt_stabilized(ECGremovedSignal_white, [49 51], fs, 'stop', use_filtfilt, half_order);
+ECGremovedSignal_white_plr = butter_filt_stabilized(ECGremovedSignal_white, [fpl-1 fpl+1], fs, 'stop', use_filtfilt, half_order);
 ECGremovedSignal_white_plr_hp = butter_filt_stabilized(ECGremovedSignal_white_plr, 20, fs, 'high', use_filtfilt, half_order);
 ECGremovedSignal = filter(1, a, ECGremovedSignal_white_plr_hp);
 

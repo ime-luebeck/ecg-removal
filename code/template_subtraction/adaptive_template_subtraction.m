@@ -1,4 +1,4 @@
-function ECGremovedSignal = adaptive_template_subtraction(signal, rPeaks, varargin)
+function ECGremovedSignal = adaptive_template_subtraction(signal, rPeaks, fs, varargin)
 %ADAPTIVE_TEMPLATE_SUBTRACTION Advanced implementation that handles and
 %   fits QRS complex and the remaining template separately. QRS section of
 %   template (R peak +/- 40ms) is positioned by linear correlation, then
@@ -12,6 +12,9 @@ function ECGremovedSignal = adaptive_template_subtraction(signal, rPeaks, vararg
 %   is then calculated for each of these 21 differently stretched template
 %   versions by correlation and simple linear regression as in the simpler 
 %   implementations; the optimal solution is selected.
+%
+% The only optional argument is the number of observed QRS complexes to 
+% build the current template from, default: 40.
 %
 % Copyright 2019 Institute for Electrical Engineering in Medicine, 
 % University of Luebeck
@@ -37,16 +40,10 @@ function ECGremovedSignal = adaptive_template_subtraction(signal, rPeaks, vararg
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-if nargin > 2
+if nargin > 3
     num = varargin{1};
 else
     num = 40;
-end
-
-if nargin > 3
-    fs = varargin{2};
-else
-    fs = 1024;
 end
 
 rPeakIdces = find(rPeaks);
@@ -90,23 +87,20 @@ for i = 1:numQRS
         L2error = zeros(2*qrsIncMax+1, 1);
 
         for qrsInc = -qrsIncMax:qrsIncMax
-            % Construct modified template:
-            % Stretch QRS complex to length(qrs) + 2*qrsmod samples (by adding
-            % qrsmod samples on each side of the R peak),
+            % Construct modified template: Stretch QRS complex to length(qrs) + 2*qrsmod samples (by adding qrsmod 
+            % samples on each side of the R peak)
             inc = (length(qrs) - 1) / (length(qrs) - 1 + 2*qrsInc);
             qrsMod = interp1(1:length(qrs), qrs, 1:inc:length(qrs), 'pchip');
             qrsMod = qrsMod';
             assert(length(qrsMod) == length(qrs) + 2 * qrsInc);
 
-            % Concatenate with the remainder of the current template; cut off
-            % or add zeroes to reach target length
+            % Concatenate with the remainder of the current template; cut off or add zeroes to reach target length
             if qrsInc > 0
                 % QRS width has been increased; therefore we must cut off
                 leftPart = currentTemplate(1+qrsInc:qrsLeftEndIdx-1);
                 rightPart = currentTemplate(qrsRightEndIdx+1:end-qrsInc);
             else
-                % QRS width has been reduced; therefore we must augment by
-                % zeroes
+                % QRS width has been reduced; therefore we must augment by zeroes
                 leftPart = [zeros(-qrsInc, 1); currentTemplate(1:qrsLeftEndIdx-1)];
                 rightPart = [currentTemplate(qrsRightEndIdx+1:end); zeros(-qrsInc, 1)];
             end
@@ -153,8 +147,7 @@ for i = 1:numQRS
 
                 currentTemplateMod = [leftPartMod; qrsMod; rightPartMod];
             else
-                % One of the signal segments is degenerated; just scale the
-                % whole signal at once, as in TS4.
+                % One of the signal segments is degenerated; just scale the whole signal at once.
                 coeffs = [ones(length(currentTemplateMod), 1) currentTemplateMod] \ next;
                 currentTemplateMod = coeffs(2) * currentTemplateMod;
                 baseLine = ones(length(currentTemplateMod), 1) * coeffs(1);
@@ -169,8 +162,7 @@ for i = 1:numQRS
         optIdcesCounts(optIdx) = optIdcesCounts(optIdx) + 1;
         subtractionTemplate(rPeakIdces(i)-lengthLeft:rPeakIdces(i)+lengthRight) = templates(:, optIdx);
     else
-        % Weirdly short segment; we're probably totally lost anyway. Just
-        % carry on...
+        % Weirdly short segment; we're probably totally lost anyway. Just carry on...
         subtractionTemplate(rPeakIdces(i)-lengthLeft:rPeakIdces(i)+lengthRight) = currentTemplate;
     end
 end

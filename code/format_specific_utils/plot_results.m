@@ -5,8 +5,8 @@ function plot_results(dataWithRPeaks, env_method, filename, varargin)
 %                               signals. The first two columns contain 2
 %                               channels of measured EMG-signals and
 %                               detected r peaks. Column 3 contains the
-%                               measured airway pressure, 4 the time
-%                               and 5 the subject number.
+%                               measured airway pressure (can be empty), 
+%                               4 the time (ms) and 5 the subject number.
 %           env_method      ->  integer 0 to 3. If 0 the no envelope is
 %                               plotted. 1 to 3 are different methods of
 %                               calculating the envelope of the ECG-removed
@@ -14,7 +14,7 @@ function plot_results(dataWithRPeaks, env_method, filename, varargin)
 %           filename        ->  filename to export plots to
 %           algo name       ->  String with description of 'data'.
 %           data            ->  Cell-matrix with same structure as
-%                               'dataWithRPeaks' with signals, that shall
+%                               'dataWithRPeaks' with signals that shall
 %                               be plotted as well.
 %   example:    plotResults(dataWithRPeaks, 0, ...
 %                   'TS', dataTS, ...
@@ -60,13 +60,10 @@ slider_size = 20;
 CONST.length = 0.8 / n_cols;
 CONST.lmargin = (1 - n_cols * CONST.length) / (n_cols + 1);
 
-% sampling frequency
-fs = 1024;
-
-for sub = 1:size(dataWithRPeaks, 1)   % iterate over subjects
+for subject_id = 1:size(dataWithRPeaks, 1)   % iterate over subjects
     
-    fig = figure('name', ['subject: ', dataWithRPeaks{sub,5}]);
-    time = dataWithRPeaks{sub, 4}(n:end) / fs; % time [seconds]
+    fig = figure('name', ['subject: ', dataWithRPeaks{subject_id,5}]);
+    time = dataWithRPeaks{subject_id, 4}(n:end) / 1000; % time [seconds]
     
     axes_handles = cell(n_rows, n_cols);
     for ax = 1:numel(axes_handles)
@@ -74,28 +71,28 @@ for sub = 1:size(dataWithRPeaks, 1)   % iterate over subjects
     end
     
     if strcmp(mode, 'measurement')        
-        plot(axes_handles{1}, time, dataWithRPeaks{sub,3}(n:end, 1))
+        plot(axes_handles{1}, time, dataWithRPeaks{subject_id, 3}(n:end, 1))
         ylabel(axes_handles{1}, 'Pressure (kPa)')
         
-        plot(axes_handles{2}, time, dataWithRPeaks{sub,1}(n:end, 1))
+        plot(axes_handles{2}, time, dataWithRPeaks{subject_id, 1}(n:end, 1))
         ylabel(axes_handles{2}, 'EMG 1 (mV)')
         
-        plot(axes_handles{3}, time, dataWithRPeaks{sub,2}(n:end, 1))
+        plot(axes_handles{3}, time, dataWithRPeaks{subject_id, 2}(n:end, 1))
         ylabel(axes_handles{3}, 'EMG 2 (mV)')
     else
         % Plot raw EMG signals with base
-        plot(axes_handles{1, 1}, time, dataWithRPeaks{sub,1}(n:end,1))
+        plot(axes_handles{1, 1}, time, dataWithRPeaks{subject_id, 1}(n:end, 1))
         ylabel(axes_handles{1, 1}, 'Raw EMG (mV)')
-        title(axes_handles{1,1}, 'Channel 1')
+        title(axes_handles{1, 1}, 'Channel 1')
         
-        plot(axes_handles{1, 2}, time, dataWithRPeaks{sub,2}(n:end,1))
-        title(axes_handles{1,2}, 'Channel 2')
+        plot(axes_handles{1, 2}, time, dataWithRPeaks{subject_id, 2}(n:end, 1))
+        title(axes_handles{1, 2}, 'Channel 2')
         
         if ~isempty(env_method)
         % Calculate and plot envelope of the ECG-removed signals instead.
             for row = 2:n_rows
                 for col = 1:n_cols
-                    env = emgEnv(varargin{2 * (row - 1)}{sub, col}(n:end, 1), 100, env_method);
+                    env = emgEnv(varargin{2 * (row - 1)}{subject_id, col}(n:end, 1), 100, env_method);
                     plot(axes_handles{row, col}, time, env, ...
                         'Color', [115, 115, 115] / 256);
                 end
@@ -108,10 +105,10 @@ for sub = 1:size(dataWithRPeaks, 1)   % iterate over subjects
                 jj = 2 * ii - 1;
 
                 plot(axes_handles{ii + 1, 1}, time, ...
-                    varargin{jj + 1}{sub, 1}(n:end, 1)) 
+                    varargin{jj + 1}{subject_id, 1}(n:end, 1)) 
 
                 plot(axes_handles{ii + 1, 2}, time, ...
-                    varargin{jj + 1}{sub, 2}(n:end, 1))
+                    varargin{jj + 1}{subject_id, 2}(n:end, 1))
 
                 algo_label = strcat('EMG (', varargin{jj}, ') (mV)');
                 ylabel(axes_handles{ii + 1, 1}, algo_label)
@@ -136,10 +133,10 @@ for sub = 1:size(dataWithRPeaks, 1)   % iterate over subjects
     % export figure
     fig_width = 10;
     fig_height = 2 * n_rows;
-    print_fig_to_png(fig, [filename, '_subject', dataWithRPeaks{sub,5}], fig_width, fig_height);
+    print_fig_to_png(fig, [filename, '_subject', dataWithRPeaks{subject_id, 5}], fig_width, fig_height);
     xlim([500, 545]);
     % export figure zoomed in
-    print_fig_to_png(fig, [filename, '_subject', dataWithRPeaks{sub,5}, '_zoom'], fig_width, fig_height);
+    print_fig_to_png(fig, [filename, '_subject', dataWithRPeaks{subject_id, 5}, '_zoom'], fig_width, fig_height);
     xlim auto;
     
     % now (after export) switch to scrollable figure design, making some
@@ -174,10 +171,10 @@ for sub = 1:size(dataWithRPeaks, 1)   % iterate over subjects
 end
 
 % Figure Size Change Callback function
-function refreshSlider(source, ~,Slider,SLIDER_SIZE)
+function refreshSlider(source, ~, Slider, SLIDER_SIZE)
     FigurePosition_ = source.Position;
-    SliderPositionX_ = FigurePosition_(3)-SLIDER_SIZE;
-    Slider.Position = [SliderPositionX_,0,SLIDER_SIZE,FigurePosition_(4)];
+    SliderPositionX_ = FigurePosition_(3) - SLIDER_SIZE;
+    Slider.Position = [SliderPositionX_, 0, SLIDER_SIZE, FigurePosition_(4)];
 end
 
 % Slider Move Callback function

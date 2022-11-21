@@ -1,4 +1,4 @@
-function SNR = calcEMGtoECGratio(dataWithRPeaks, varargin)
+function SNR = calcEMGtoECGratio(dataWithRPeaks, fs, varargin)
 %CALCEMGTOECGRATIO Calculates the Signal-to-Noise ratio of cardiac
 %contaminated EMG signals
 %
@@ -11,10 +11,11 @@ function SNR = calcEMGtoECGratio(dataWithRPeaks, varargin)
 %                               channels of measured EMG-signals and detected r peaks. Column 3
 %                               contains the measured airway pressure, 4 the time
 %                               and 5 the subject number.
+%           fs              ->  Sampling rate of all signals
 %           flagPlot        ->  If 1, results are plotted.
 %           data            ->  SNR is calculated of alternative set of data with
 %                               same structure as dataWithRPeaks.
-%           example: calcEMGtoECGratio(dataWithRPeaks, 1, dataTemplateSubtraction);
+%           example: calcEMGtoECGratio(dataWithRPeaks, 1024, 1, dataTemplateSubtraction);
 %   OUTPUT: SNR             ->  mx2 matrix with SNR of 2 channels for m subjects 
 %
 % Copyright 2021 Institute for Electrical Engineering in Medicine, 
@@ -40,25 +41,24 @@ function SNR = calcEMGtoECGratio(dataWithRPeaks, varargin)
 % OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR 
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-if nargin > 1 && ~isempty(varargin{1})
+if nargin > 2 && ~isempty(varargin{1})
     flagPlot = varargin{1};
 else
     flagPlot = 1;
 end
 
-if nargin > 2 && ~isempty(varargin{2})
+if nargin > 3 && ~isempty(varargin{2})
     data = varargin{2};
 else
     data = dataWithRPeaks;
 end
 
-if nargin > 3 && ~isempty(varargin{3})
+if nargin > 4 && ~isempty(varargin{3})
     skip_seconds = varargin{3};
 else
     skip_seconds = 0;
 end
 
-fs = 1024;
 n = size(data, 1);
 N = size(data{1, 1}, 1);
 
@@ -73,14 +73,14 @@ for i = 1:n
     r_peak_locs_2 = find(dataWithRPeaks{i, 2}(skip_samples+1:end-skip_samples, 2)); % Index of R peaks in channel 2
     
     % Extract insp phases - we assume these to be phases of muscular activity
-    pressure = movmean(dataWithRPeaks{i, 3}, 100, 'omitnan');
+    pressure = movmean(dataWithRPeaks{i, 3}, round(0.1*fs), 'omitnan');
     insp_mask = detectInspFromPressure(pressure(skip_samples+1:end-skip_samples), fs);
     
     % Calculate empirical SNR
     [snr1, activity_only_bl_removed_1, activity_mask_1] = SNRmeasured(signal_1, ... 
-					   r_peak_locs_1, insp_mask);
+					   r_peak_locs_1, fs, insp_mask);
     [snr2, activity_only_bl_removed_2, activity_mask_2] = SNRmeasured(signal_2, ... l
-					   r_peak_locs_2, insp_mask);
+					   r_peak_locs_2, fs, insp_mask);
                    
     SNR(i, :) = [snr1, snr2];
 

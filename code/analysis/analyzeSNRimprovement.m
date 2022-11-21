@@ -1,4 +1,4 @@
-function [SNRimprovement, SNRinput] = analyzeSNRimprovement(dataWithRPeaks, ...
+function [SNRimprovement, SNRinput] = analyzeSNRimprovement(dataWithRPeaks, fs, ...
     data, varargin)
 %ANALYZESNRIMPROVMENT
 %   INPUT:  dataWithRPeaks  ->  nx5 cell-matrix, where n is the no. of
@@ -6,10 +6,11 @@ function [SNRimprovement, SNRinput] = analyzeSNRimprovement(dataWithRPeaks, ...
 %                               channels of measured EMG-signals and detected r peaks. Column 3
 %                               contains the measured airway pressure, 4 the time
 %                               and 5 the subject number.
+%           fs              ->  Sampling rate of all signals
 %           data            ->  Cell-matrix with same structure as
 %                               'dataWithRPeaks' whose SNR improvement
 %                               shall be calculated.
-%   example:    analyzeSNRimprovement(dataWithRPeaks, channels_to_use, ...
+%   example:    analyzeSNRimprovement(dataWithRPeaks, 1024, ...
 %                   dataKalmanFilter1, ...
 %                   dataKalmanFilter2)
 %
@@ -37,15 +38,15 @@ function [SNRimprovement, SNRinput] = analyzeSNRimprovement(dataWithRPeaks, ...
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     % Number of cleaned data sets to analyze
-    n = nargin-1;
+    n = nargin-2;
     
     % skip first and last 10 seconds of analysis because these often contain artifacts
     skip_seconds = 10;    
 
     disp('Input...')
-    SNRinput = calcEMGtoECGratio(dataWithRPeaks, 0, [], skip_seconds);
+    SNRinput = calcEMGtoECGratio(dataWithRPeaks, fs, 0, [], skip_seconds);
     disp('First algo...')
-    SNRoutput = calcEMGtoECGratio(dataWithRPeaks, 0, data, skip_seconds);
+    SNRoutput = calcEMGtoECGratio(dataWithRPeaks, fs, 0, data, skip_seconds);
 
     % Transform to dB
     SNRinput = 20 * log10(SNRinput);
@@ -61,7 +62,7 @@ function [SNRimprovement, SNRinput] = analyzeSNRimprovement(dataWithRPeaks, ...
     
     for ii = 2:n
         disp('Next algo...' )
-        SNRoutput = calcEMGtoECGratio(dataWithRPeaks, 0, varargin{ii - 1}, skip_seconds);
+        SNRoutput = calcEMGtoECGratio(dataWithRPeaks, fs, 0, varargin{ii - 1}, skip_seconds);
         SNRoutput = 20 * log10(SNRoutput);
         SNRoutput = SNRoutput(:);
         improvement = SNRoutput - SNRinput;

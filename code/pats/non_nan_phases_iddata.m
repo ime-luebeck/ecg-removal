@@ -1,6 +1,6 @@
-function merged_nan_parts = non_nan_phases_iddata(output_signal, input_signals, output_filter)
+function merged_nan_parts = non_nan_phases_iddata(output_signal, input_signals, output_filter, fs)
 
-    Ts = 0.01;
+    
 
     if nargin < 2 || isempty(input_signals)
         sig_mat = [output_signal];
@@ -12,7 +12,13 @@ function merged_nan_parts = non_nan_phases_iddata(output_signal, input_signals, 
         output_filter = [];
     end
     
-   % Split into non-nan parts of the signal
+    if nargin < 4
+        fs = 1;
+    end
+    
+    Ts = 1/fs;
+    
+    % Split into non-nan parts of the signal
     signal_parts = split_signal_on_nans(sig_mat);
     % Use the different non-nan parts as different "experiments" belonging
     % to a single iddata dataset
