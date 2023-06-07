@@ -48,6 +48,13 @@ end
 
 rPeakIdces = find(rPeaks);
 
+signal_sizes = size(signal);
+if signal_sizes(1) == 1
+    was_row = true;
+else
+    was_row = false;
+end
+
 signal = signal(:);
 N = size(signal);
 numQRS = length(rPeakIdces);
@@ -168,5 +175,10 @@ for i = 1:numQRS
 end
 
 ECGremovedSignal = signal - subtractionTemplate;
+
+if was_row
+    ECGremovedSignal = ECGremovedSignal';
+end
+
 end
 

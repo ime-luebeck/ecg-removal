@@ -70,7 +70,7 @@ algoAF = @(sig) movmean(sig, 5, 'omitnan');
 tempData = filter_signals(tempData, algoAF, 3);
 fprintf('\n R-Peak Detection... \n')
 fs = 512;
-algoRPeak = @(sig, time) [sig, peak_detection(butter_filt_stabilized(sig, 10, fs, 'high', use_filtfilt, 6), fs, time)'];
+algoRPeak = @(sig, time) [sig, peak_detection(butter_filt_stabilized(sig, 5, fs, 'high', use_filtfilt, 6), fs, time)'];
 dataWithRPeaks = filter_signals(tempData, algoRPeak, [1 2], 0, 1);
 
 fprintf('\n Baseline Removal... \n')
@@ -126,7 +126,6 @@ if isempty(dir(name))
 else
     load(name)
 end
-
 
 % Stationary Wavelet Transform (SWT)
 fprintf('\n Wavelet Transform (SWT)... \n')

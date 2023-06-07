@@ -36,6 +36,12 @@ function peaks = peak_detection(signal, fs, time_ms)
 % OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR 
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+if nargin > 2
+    time_s = time_ms / 1000;
+else
+    time_s = 0:1/fs:(length(signal)-1)/fs;
+end
+
 [rPeaks, polarity] = peak_detection_pan_tompkin(signal, fs, .150, {}, {}, 0.3);
 
 if polarity
@@ -50,6 +56,7 @@ num_peaks = length(rPeakIdces);
 % use a narrow section around R peak for alignment
 lengthLeft = ceil(0.2*fs);
 lengthRight = ceil(0.2*fs);
+maxlag = ceil(0.15*fs);
 avgPeak = build_template(rPeakIdces, lengthLeft, lengthRight, signal, num_peaks, num_peaks, false);
 
 peaks = rPeaks;
@@ -58,7 +65,7 @@ for ii = 2:(num_peaks-1)
     
     % Re-align beats by maximizing correlation with the average beat
     current_peak = signal(rPeakIdces(ii)-lengthLeft:rPeakIdces(ii)+lengthRight);
-    [correlation, lags] = xcorr(current_peak, avgPeak, 'coeff');
+    [correlation, lags] = xcorr(current_peak, avgPeak, maxlag, 'coeff');
     [~, indexmax] = max(correlation);
     lag_corr = lags(indexmax); % lag > 0 => template must be shifted to the right
     
@@ -66,6 +73,12 @@ for ii = 2:(num_peaks-1)
     % To prevent getting stuck in *really* local optima, search the 11 surrounding samples
     [~, idxopt] = max(peak_sign * current_peak((-5:5) + lengthLeft + 1 + lag_corr));
     lag_opt = lag_corr + idxopt - 6;
+    
+    if abs(lag_opt) >= maxlag
+        disp(['Could not properly align R peak detected by Pan-Tompkins at ', ...
+            num2str(time_s(rPeakIdces(ii))), 's; dropping this one.']);
+        peaks(rPeakIdces(ii)) = 0;
+    end
     
     peaks(rPeakIdces(ii)) = 0;
     if rPeakIdces(ii) + lag_opt - last_peak > ceil(0.01*fs)
@@ -87,12 +100,7 @@ if sum_non_peaks > 0
     fprintf('Found %d peaks which are not local maxima, which is unexpected.\n', sum_non_peaks);
 end
 
-if nargin > 2
-    rPeakTimes = time_ms(rPeakIdces) / 1000;
-else
-    t = 0:1/fs:(length(signal)-1)/fs;
-    rPeakTimes = t(rPeakIdces);
-end
+rPeakTimes = time_s(rPeakIdces);
 rPeakTimesRestricted = rPeakTimes(rPeakTimes > 1);
 drPeakTimesRestricted = diff(rPeakTimesRestricted);
 [val, idx] = min(drPeakTimesRestricted);

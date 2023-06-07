@@ -24,6 +24,9 @@ function [out, wDEC, thresholds, gates] = swtden(x, peaks, fs, varargin)
 % OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR 
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+x = x(:)';
+peaks = peaks(:)';
+
 % Use soft ('s') or hard ('h') thresholding
 if nargin > 3
 	sorh = varargin{1};
@@ -91,9 +94,9 @@ xd = iswt(wxd, w);
 wDEC = wDEC(:, 1:l);
 xd = xd(1:l);
 thresholds = thresholds(:, 1:l);
-gates = gates(1:l);
+gates = gates(1:l)';
 
-out = x - xd';
+out = x - xd;
 
 end
 
