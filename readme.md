@@ -70,13 +70,13 @@ The above script uses some additional machinery in order to handle multiple sepa
 
     % This is the actual cardiac artifact removal step
     cleaned_ats = adaptive_template_subtraction(signalhp20, rpeaks, fs);
-	% Wavelet denoising is another very robust alternative
-	cleaned_swt = 
-	% Depending on the use case, even a simple HP100 might do
-	cleaned_hp100 = 
-	
-	% for a simple comparison plot, consider using https://github.com/e-pet/plot_signals
-	% plot_signals([signal; cleaned_ats; cleaned_swt; cleaned_hp100], [], [], [], [], 'markers', rpeaks);
+    % Wavelet denoising is another very robust alternative
+    cleaned_swt = swtden(signal, rpeaks, fs, 'h', 3, 'db2', 4.5);
+    % Depending on the use case, even a simple HP100 might do
+    cleaned_hp100 = butter_filt_stabilized(signal, 100, fs, 'high', use_filtfilt, 6);
+
+    % for a simple comparison plot, consider using https://github.com/e-pet/plot_signals
+    % plot_signals([signal; cleaned_ats; cleaned_swt; cleaned_hp100], [], [], [], [], 'markers', rpeaks);
 ```
 
 
