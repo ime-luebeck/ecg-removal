@@ -40,6 +40,7 @@ Analysis script: ecg_removal.m and functions to read, filter, plot and evaluate 
 to read the provided data sets, apply ECG-removal algorithms (or reload precomputed results) and execute a performance evaluation.
 
 The above script uses some additional machinery in order to handle multiple separate signals at the same time.
+
 **If you just want to apply the algorithms to a single signal**, you can simply do something like the following:
 ```MATLAB
     addpath('filters'); addpath('ecg_utils'); addpath('template_subtraction');
