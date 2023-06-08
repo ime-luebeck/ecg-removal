@@ -49,10 +49,10 @@ use_filtfilt = true;
 % If you want a test signal to try this with, you can use the following; otherwise replace by your data
 addpath('format_specific_utils');
 if isempty(dir('../data/csv/subject1.csv'))
-if ~exist('../data/csv', 'dir')
-    mkdir('../data/csv');
-end
-unzip('../data/subject1.zip','../data/csv')
+    if ~exist('../data/csv', 'dir')
+        mkdir('../data/csv');
+    end
+    unzip('../data/subject1.zip','../data/csv')
 end
 rawData = load_measured_signals('../data/csv');
 signal = rawData{1, 1};
