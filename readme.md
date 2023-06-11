@@ -80,6 +80,16 @@ cleaned_hp100 = butter_filt_stabilized(signal, 100, fs, 'high', use_filtfilt, 6)
 % plot_signals([signal; cleaned_ats; cleaned_swt; cleaned_hp100], [], [], [], [], 'markers', rpeaks);
 ```
 
+#### Notes on R Peak detection
+Most of the algorithms rely - at least to some degree - on reasonably accurate R peak detection.
+This is typically not a problem since cardiac artifacts are often much larger than EMG activity in respiratory surface EMG recordings (for which this toolbox was primarily developed).
+In some cases, however, EMG activity may be higher or comparable in amplitude to the cardiac beats, which makes R peak detection hard or impossible in those regions.
+For this reason, you should always check visually whether R peaks have been detected correctly. See the last line in the above code snippet for a simple way of doing so. (An automatic way of doing so would be desirable [but hasn't been implemented yet](https://github.com/ime-luebeck/ecg-removal/issues/2). Note however that min/max detected R peak intervals are reported on the command line, which should already serve as a good indicator.)
+
+Some options if the R peak detection does not seem to work well:
+- Assess whether this actually has a noticable effect on the quality of the denoised signals. In many cases, and if R peak detection still works for most of the signal, the denoising still works reasonably well.
+- Use an algorithm that does not depend on R peak detection. Of the currently implemented algorithms, these are only the basic high-pass filters (which perform very well with a high cutoff frequency and are an attractive option for many applications!) and the EMD.
+- Note that R peaks do *not* need to be detected in the channel to be denoised! If you are using multichannel measurements, and R peaks can be correctly and robustly detected in at least one of them, you can just use the result of that detection for removal in all channels. (Only the location/timing of the R peaks is passed to the algoroithms, *not* the R peak shape which will differ between channels.)
 
 #### Acknowledgements
 The toolbox contains code contributions by [Reza Sameni](https://sameni.info/) (Pan-Tompkins peak detection and some of the files in the `model-based` directory - see individual file headers -, all from the [OSET toolbox](https://gitlab.com/rsameni/OSET)), [Jan Graßhoff](https://www.ime.uni-luebeck.de/institute/staff/jan-grasshoff.html) (`swt_denoising`) and [Julia Sauer](https://www.ime.uni-luebeck.de/institute/staff/julia-sauer.html) (various files throughout the project).
