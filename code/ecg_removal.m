@@ -50,7 +50,7 @@ end
 % in this toolbox; it is only necessary if one wants to use the
 % 'filter_signals' utility function for handling multiple signals at the
 % same time. You can also simply apply the removal functions to individual
-% signals.
+% signals; refer to the readme for an example of high to do this.
 rawData = load_measured_signals('../data/csv');
 
 fs = 1024;  % signal sampling rate
@@ -69,18 +69,17 @@ tempData = filter_signals(tempData, algoLP, [1 2]);
 algoAF = @(sig) movmean(sig, 5, 'omitnan');
 tempData = filter_signals(tempData, algoAF, 3);
 fprintf('\n R-Peak Detection... \n')
-fs = 512;
 algoRPeak = @(sig, time) [sig, peak_detection(butter_filt_stabilized(sig, 5, fs, 'high', use_filtfilt, 6), fs, time)'];
-dataWithRPeaks = filter_signals(tempData, algoRPeak, [1 2], 0, 1);
+dataWithRPeaks = filter_signals(tempData, algoRPeak, [1 2], 0, 4);
 
 fprintf('\n Baseline Removal... \n')
 % 2nd order 10 Hz high-pass for BL removal + some ECG removal
 hp10 =  @(sig, rpeaks) [butter_filt_stabilized(sig, 10, fs, 'high', use_filtfilt, 2), rpeaks];
-dataWithRPeaksHP10 = filter_signals(dataWithRPeaks, hp10, [1 2], 1);
+dataWithRPeaksHP10 = filter_signals(dataWithRPeaks, hp10, [1 2], 2);
 
 % 6th order 20 Hz high-pass for BL removal + some ECG removal
 hp20 =  @(sig, rpeaks) [butter_filt_stabilized(sig, 20, fs, 'high', use_filtfilt, 6), rpeaks];
-dataWithRPeaksHP20 = filter_signals(dataWithRPeaks, hp20, [1 2], 1);
+dataWithRPeaksHP20 = filter_signals(dataWithRPeaks, hp20, [1 2], 2);
 
 %% ECG-Artifact Removal
 % Template Subtraction (TS)
@@ -88,7 +87,7 @@ fprintf('\n Template Subtraction (TS)... \n')
 name = fullfile('../results', 'dataTS.mat');
 if isempty(dir(name))
     dataTS = filter_signals(dataWithRPeaksHP20, ...
-        @template_subtraction, [1 2], 1);
+        @template_subtraction, [1 2], 2);
     save(name, 'dataTS');
 else
     load(name)
@@ -99,7 +98,7 @@ fprintf('\n Adaptive Template Subtraction (ATS)... \n')
 name = fullfile('../results', 'dataATS.mat');
 if isempty(dir(name))
     ats = @(signal, rpeaks) adaptive_template_subtraction(signal, rpeaks, fs);
-    dataATS = filter_signals(dataWithRPeaksHP20, ats, [1 2], 1);
+    dataATS = filter_signals(dataWithRPeaksHP20, ats, [1 2], 2);
     save(name, 'dataATS');
 else
     load(name)
@@ -133,7 +132,7 @@ name = fullfile('../results', 'dataSWT.mat');
 if isempty(dir(name))
     swt = @(signal, rPeaks) ...
 		swtden(signal, rPeaks, fs, 'h', 3, 'db2', 4.5);
-    dataSWT = filter_signals(dataWithRPeaks, swt, [1 2], 1);
+    dataSWT = filter_signals(dataWithRPeaks, swt, [1 2], 2);
     save(name, 'dataSWT');
 else
     load(name)
@@ -145,7 +144,7 @@ name = fullfile('../results', 'dataEKS2.mat');
 if isempty(dir(name))
     ekf2 = @(signal, rpeaks) kalman_filter_2(signal, rpeaks, fs);
     [~, dataEKS2] = ...
-		filter_signals(dataWithRPeaksHP10, ekf2, [1 2], 1);
+		filter_signals(dataWithRPeaksHP10, ekf2, [1 2], 2);
     save(name, 'dataEKS2');
 else
     load(name)
@@ -157,7 +156,7 @@ name = fullfile('../results', 'dataEKS25.mat');
 if isempty(dir(name))
     ekf25 = @(signal, rpeaks) kalman_filter_25(signal, rpeaks, fs);
     [~, dataEKS25] = ...
-		filter_signals(dataWithRPeaksHP10, ekf25, [1 2], 1);
+		filter_signals(dataWithRPeaksHP10, ekf25, [1 2], 2);
     save(name, 'dataEKS25');
 else
     load(name)
@@ -168,7 +167,7 @@ fprintf('\n Empirical Mode Decomposition (EMD)... \n')
 name = fullfile('../results', 'dataEMD.mat');
 if isempty(dir(name))
     emd = @(signal) EMD(signal, 60, 1);
-    dataEMD = filter_signals(dataWithRPeaksHP20, emd, [1 2], 0);
+    dataEMD = filter_signals(dataWithRPeaksHP20, emd, [1 2]);
     save(name, 'dataEMD');
 else
     load(name)
@@ -180,7 +179,7 @@ name = fullfile('../results', 'dataPATS.mat');
 if isempty(dir(name))
     pats = @(signal, rpeaks) PATS(signal, rpeaks, fs, 0, [], [], fpl);
     [~, dataPATS] = ...
-        filter_signals(dataWithRPeaksHP20, pats, [1 2], 1);
+        filter_signals(dataWithRPeaksHP20, pats, [1 2], 2);
     save(name, 'dataPATS');
 else
     load(name)

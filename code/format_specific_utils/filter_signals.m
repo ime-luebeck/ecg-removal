@@ -12,14 +12,15 @@ function varargout = filter_signals(sigIn, algo, channels, varargin)
 %   channels: List of channels (i.e., columns of sigIn) to apply the filtering 
 %             algorithm to.
 %
-%   passRPeaks: (Optional) If this is 1, the signal sigIn{ii, chan}(:, 2) is 
-%               passed as an additional input vector to the filter function,
-%               generally assuming that this contains the locations of
-%               detected RPeaks. If 0 (default), no additional vector is passed.
+%   passAuxPerChannel: (Optional, positional) If this is nonzero, the signal
+%                      sigIn{ii, chan}(:, passAuxPerChannel) is passed as an 
+%                      additional input vector to the filter function. If 0 
+%                      (default), no additional vector is passed.
 %
-%   passTime: (Optional) If this is 1, the signal sigIn{ii, chan}(:, 4) is passed as an additional
-%   				input vector to the filter function, generally assuming that this contains the measurement time
-%   				in ms. If 0 (default), no additional vector is passed.
+%   passAuxPerRecording: (Optional, positional) If this is nonzero, the
+%                        signal sigIn{ii, passAuxPerRecording}):, 1) is passed
+%                        as an additional input vector to the filter function.
+%                        If 0 (default), no additional vector is passed.
 %
 %   OUTPUTS
 %
@@ -50,21 +51,24 @@ function varargout = filter_signals(sigIn, algo, channels, varargin)
 % THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 if nargin > 3
-    auxChannel = varargin{1};
+    passAuxPerChannel = varargin{1};
 else
-    auxChannel = 0;
+    passAuxPerChannel = 0;
 end
 
 if nargin > 4
-    auxTime = varargin{2};
+    passAuxPerRecording = varargin{2};
+    if passAuxPerRecording ~=0
+        assert(passAuxPerChannel == 0);
+    end
 else
-    auxTime = 0;
+    passAuxPerRecording = 0;
 end
 
 n = size(sigIn, 1);
 
 
-% Some algos return multiple results that should all be passed on.
+% Some algorithms return multiple results that should all be passed on.
 % "nargout" yields the number of output arguments this function was called
 % with. We expect to collect the same amount of output arguments from each
 % call to "algo".
@@ -75,21 +79,20 @@ end
 
 % Loop over data sets
 for ii = 1:n
-    % Loop over channels in each data set that the filtering shall be
-    % applied to
+    % Loop over channels in each data set that the filtering shall be applied to
     disp(['Dataset ', num2str(ii)]);
     for jj = 1:length(channels)
         chan = channels(jj);
         sigsOutLoc = cell(nargout, 1);
         
-		if auxTime == 0
-			if auxChannel == 0
+		if passAuxPerChannel == 0
+			if passAuxPerRecording == 0
 				[sigsOutLoc{:}] = algo(sigIn{ii, chan}(:, 1));
-			elseif auxChannel == 1
-				[sigsOutLoc{:}] = algo(sigIn{ii, chan}(:, 1), sigIn{ii, chan}(:, 2));
+            else
+				[sigsOutLoc{:}] = algo(sigIn{ii, chan}(:, 1), sigIn{ii, passAuxPerRecording}(:, 1));
 			end
 		else
-			[sigsOutLoc{:}] = algo(sigIn{ii, chan}(:, 1), sigIn{ii, 4});
+			[sigsOutLoc{:}] = algo(sigIn{ii, chan}(:, 1), sigIn{ii, chan}(:, passAuxPerChannel));
 		end
 
         for kk = 1:nargout

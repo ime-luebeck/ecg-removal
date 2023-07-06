@@ -4,6 +4,9 @@ function peaks = peak_detection(signal, fs, time_ms)
 % Returns a vector of the same length as signal, with 1 indicating the
 % presence of an R peak, and 0 else.
 %
+% The optional argument 'time_ms' is only used for diagnostic purposes; if
+% it is not provided a default time vector is created based on fs.
+%
 % Pan-Tompkins R peak detection algorithm essentially detects peaks in a
 % variously filtered version of the ECG signal.
 % Sometimes, the beat shape changes such that a different peak becomes the
