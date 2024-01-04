@@ -4,7 +4,7 @@ This software package provides Matlab implementations of a number of algorithms 
 
 In particular, all algorithms desribed in the following two publications are included:
 - E. Petersen, J. Sauer, J. Grasshoff, P. Rostalski, [Removing Cardiac Artifacts from Single-Channel Respiratory Electromyograms](https://ieeexplore.ieee.org/document/8988257), IEEE Access, 2020, and
-- E. Petersen, "Model-based Probabilistic Inference for Monitoring Respiratory Effort using the Surface Electromyogram", Dissertation, forthcoming.
+- E. Petersen, [Model-based Probabilistic Inference for Monitoring Respiratory Effort using the Surface Electromyogram](https://e-pet.github.io/files/Dissertation%20Petersen.pdf), Dissertation, 2021.
 
 In case of any questions, comments, or bugs, please don't hesitate to contact me or open an issue on GitHub.
 
@@ -22,7 +22,7 @@ Matlab implementations of following algorithms:
 - Model-based ECG removal with second and 25th order Extended Kalman filter and smoother (based on Sameni et al., "A nonlinear Bayesian filtering framework for ECG denoising," 2007, IEEE Transactions on Biomedical Engineering, and Akhbari et al., "ECG denoising and fiducial point extraction using an extended Kalman filtering framework with linear and nonlinear phase observations," Physiological Measurement, 2016). Implementation partially based on the [OSET toolbox](https://gitlab.com/rsameni/OSET) of Reza Sameni.
 - Wavelet Denoising (contributed by [Jan Graßhoff](https://www.ime.uni-luebeck.de/institute/staff/jan-grasshoff.html))
 - Empirical Mode Decomposition
-- Probabilistic Adaptive Template Subtraction (PATS, best-performing algorithm as per Petersen 2022).
+- Probabilistic Adaptive Template Subtraction (PATS, best-performing algorithm as per Petersen 2021).
 		
 Performance evaluation functions
 - Signal-to-noise ratio
